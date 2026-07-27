@@ -1,3 +1,4 @@
+#include <string_view>
 #include "ParameterLayout.h"
 #include "ParameterIDs.h"
 
@@ -94,6 +95,31 @@ const std::vector<ParamMeta>& allParams()
     return table;
 }
 
+// Value presentation follows the Oddity house convention shared by the other
+// plugins (Bitcrusher / Heavy Hands / Midrange DynEQ): unit-suffixed text via
+// the parameter attributes — "-6.0 dB" (1 decimal), integer "35%" for
+// amounts, "250 Hz" / "12.0 kHz" for frequencies — with matching text->value
+// parsing so host-typed values round-trip.
+namespace
+{
+juce::String dbText (float v, int)  { return juce::String (v, 1) + " dB"; }
+
+juce::String pctText (float v, int) { return juce::String (juce::roundToInt (v)) + "%"; }
+
+juce::String hzText (float hz, int)
+{
+    if (hz >= 1000.0f) return juce::String (hz / 1000.0f, 1) + " kHz";
+    if (hz >= 100.0f)  return juce::String (hz, 0) + " Hz";
+    return juce::String (hz, 2) + " Hz";
+}
+
+float hzFromText (const juce::String& text)
+{
+    const float v = text.getFloatValue();
+    return text.containsIgnoreCase ("k") ? v * 1000.0f : v;
+}
+} // namespace
+
 juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 {
     using namespace juce;
@@ -109,6 +135,37 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
                 NormalisableRange<float> range (p.min, p.max, 0.0f, p.skew);
                 auto attr = AudioParameterFloatAttributes().withLabel (p.unit)
                                 .withAutomatable (p.automatable);
+
+                const std::string_view unit (p.unit);
+                if (unit == "dB")
+                {
+                    attr = attr.withStringFromValueFunction (dbText);
+                }
+                else if (unit == "Hz")
+                {
+                    attr = attr.withStringFromValueFunction (hzText)
+                               .withValueFromStringFunction (hzFromText);
+                }
+                else if (unit == "%")
+                {
+                    attr = attr.withStringFromValueFunction (pctText);
+                }
+                else if (unit == "gens")
+                {
+                    attr = attr.withStringFromValueFunction (
+                        [] (float v, int) { return juce::String (v, 1) + " gen"; });
+                }
+                else if (p.min == 0.0f && p.max == 1.0f)
+                {
+                    // Unitless 0..1 amounts present as percentages (house
+                    // style); typed text like "35%" or "35" parses back.
+                    attr = attr.withStringFromValueFunction (
+                                   [] (float v, int) { return pctText (v * 100.0f, 0); })
+                               .withValueFromStringFunction (
+                                   [] (const juce::String& text)
+                                   { return juce::jlimit (0.0f, 1.0f, text.getFloatValue() / 100.0f); });
+                }
+
                 layout.add (std::make_unique<AudioParameterFloat> (pid, p.displayName, range, p.def, attr));
                 break;
             }
@@ -129,6 +186,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
             case ParamMeta::Type::Int:
             {
                 auto attr = AudioParameterIntAttributes().withAutomatable (p.automatable);
+                if (std::string_view (p.id) == "seed")
+                    attr = attr.withStringFromValueFunction (
+                               [] (int v, int) { return v == 0 ? juce::String ("Auto") : juce::String (v); })
+                           .withValueFromStringFunction (
+                               [] (const juce::String& text)
+                               { return text.containsIgnoreCase ("auto") ? 0 : text.getIntValue(); });
                 layout.add (std::make_unique<AudioParameterInt> (pid, p.displayName, (int) p.min, (int) p.max, (int) p.def, attr));
                 break;
             }

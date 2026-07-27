@@ -113,6 +113,42 @@ VFA_TEST (Manifest_matches_code_table)
     }
 }
 
+// Dial value presentation pins the Oddity house convention shared with the
+// other plugins (Bitcrusher / Heavy Hands): dB one decimal, integer percent
+// (0..1 amounts shown as percentages), Hz/kHz suffixes, named edge values.
+VFA_TEST (Value_text_matches_house_style)
+{
+    vfa::VfaProcessor proc;
+    auto text = [&proc] (const char* pid, float plain)
+    {
+        auto* p = proc.parameters().getParameter (pid);
+        REQUIRE (p != nullptr);
+        return p->getText (p->convertTo0to1 (plain), 64).toStdString();
+    };
+    auto parse = [&proc] (const char* pid, const char* s)
+    {
+        auto* p = proc.parameters().getParameter (pid);
+        REQUIRE (p != nullptr);
+        return p->convertFrom0to1 (p->getValueForText (s));
+    };
+
+    CHECK_MSG (text ("outTrim", -6.0f) == "-6.0 dB", text ("outTrim", -6.0f).c_str());
+    CHECK_MSG (text ("mix", 35.0f) == "35%", text ("mix", 35.0f).c_str());
+    CHECK_MSG (text ("wow", 0.35f) == "35%", text ("wow", 0.35f).c_str());
+    CHECK_MSG (text ("fidelity", 0.7f) == "70%", text ("fidelity", 0.7f).c_str());
+    CHECK_MSG (text ("delHfRoll", 12000.0f) == "12.0 kHz", text ("delHfRoll", 12000.0f).c_str());
+    CHECK_MSG (text ("delLfRoll", 250.0f) == "250 Hz", text ("delLfRoll", 250.0f).c_str());
+    CHECK_MSG (text ("wowRate", 0.65f) == "0.65 Hz", text ("wowRate", 0.65f).c_str());
+    CHECK_MSG (text ("generation", 2.0f) == "2.0 gen", text ("generation", 2.0f).c_str());
+    CHECK_MSG (text ("seed", 0.0f) == "Auto", text ("seed", 0.0f).c_str());
+
+    // Typed text round-trips through the matching parsers.
+    CHECK_NEAR (parse ("wow", "35%"), 0.35f, 1.0e-3);
+    CHECK_NEAR (parse ("delHfRoll", "12.0 kHz"), 12000.0f, 30.0f);
+    CHECK_NEAR (parse ("outTrim", "-6.0 dB"), -6.0f, 1.0e-3);
+    CHECK_NEAR (parse ("seed", "Auto"), 0.0f, 1.0e-3);
+}
+
 VFA_TEST (Apvts_layout_contains_all_params)
 {
     vfa::VfaProcessor proc;
