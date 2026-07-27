@@ -73,7 +73,7 @@ target_link_libraries(vfa_dsp
 )
 # Propagate JUCE header paths/definitions to test executables without
 # propagating the module *sources* (INTERFACE_SOURCES stay private).
-target_include_directories(vfa_dsp PUBLIC "${CMAKE_SOURCE_DIR}/external/JUCE/modules")
+target_include_directories(vfa_dsp PUBLIC "${VFA_JUCE_MODULES_DIR}")
 target_compile_definitions(vfa_dsp PUBLIC
     JUCE_MODULE_AVAILABLE_juce_core=1
     JUCE_MODULE_AVAILABLE_juce_events=1
@@ -86,10 +86,10 @@ target_compile_definitions(vfa_dsp PUBLIC
 
 # -------------------------------------------------------------------- Plugin
 juce_add_plugin(VintageFilmAudio
-    COMPANY_NAME "Forty Ounce Audio"
-    BUNDLE_ID com.fortyounceaudio.vintagefilmaudio
-    PLUGIN_MANUFACTURER_CODE Foza
-    PLUGIN_CODE Vfta
+    COMPANY_NAME "Oddity Audio"
+    BUNDLE_ID com.oddityaudio.hearditontv
+    PLUGIN_MANUFACTURER_CODE Odty
+    PLUGIN_CODE Hitv
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
@@ -97,7 +97,7 @@ juce_add_plugin(VintageFilmAudio
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE
     FORMATS ${VFA_FORMATS}
-    PRODUCT_NAME "Vintage Film and TV"
+    PRODUCT_NAME "Heard it on TV"
     VST3_CATEGORIES Fx Restoration
     AU_MAIN_TYPE kAudioUnitType_Effect
 )
@@ -157,7 +157,7 @@ add_executable(VfaPluginTests
     Tests/Realtime/ClickTest.cpp
 )
 target_include_directories(VfaPluginTests PRIVATE Tests Source
-    "${CMAKE_SOURCE_DIR}/external/JUCE/modules")
+    "${VFA_JUCE_MODULES_DIR}")
 target_link_libraries(VfaPluginTests PRIVATE VintageFilmAudio)
 # The plugin links JUCE modules privately; the test executable only needs the
 # headers (objects come from the plugin static lib). Keep definitions in sync
@@ -189,7 +189,7 @@ set_tests_properties(DspSuite PluginSuite PROPERTIES TIMEOUT 1800)
 # Subjective ABX/blind-comparison package renderer (TEST_PLAN §Reference).
 add_executable(VfaRenderPackage Tests/Reference/RenderReferencePackage.cpp)
 target_include_directories(VfaRenderPackage PRIVATE Tests Source
-    "${CMAKE_SOURCE_DIR}/external/JUCE/modules")
+    "${VFA_JUCE_MODULES_DIR}")
 target_link_libraries(VfaRenderPackage PRIVATE VintageFilmAudio)
 target_compile_definitions(VfaRenderPackage PRIVATE
     JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1

@@ -22,6 +22,14 @@ Kinescope (generic technical term), Variable Area / Variable Density
 (technical terms), MTS/BTSC referenced only in docs, UI says
 "Broadcast Stereo". **Cleared.**
 
+## Product & company names
+
+Product **"Heard it on TV"**, company **"Oddity Audio"** (set 2026-07-27 at
+the owner's direction). Both are common-phrase / coined names with no known
+protected-work reference; standard trademark clearance search is a release
+gate (Docs/RELEASE_CHECKLIST.md) — note possible proximity to "As Seen On
+TV"-style marks in adjacent goods classes; counsel to confirm.
+
 ## Terms flagged for legal review before commercial release
 
 | Term | Where | Concern | Recommendation |

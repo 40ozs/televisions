@@ -1,4 +1,4 @@
-# Vintage Film & TV — historical delivery-chain audio plugin
+# Heard it on TV — historical delivery-chain audio plugin by Oddity Audio
 
 A JUCE/C++20 audio effect (VST3 / Standalone; AU on macOS; AAX-ready) that
 transforms clean audio into historically plausible film and television sound

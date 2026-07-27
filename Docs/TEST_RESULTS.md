@@ -10,7 +10,7 @@ build, JUCE 8.0.8. Every result below was actually executed; commands given.
 | DSP suite (62 tests, 310 423 checks) | `./build/VintageFilmAudio/VfaDspTests` | **PASS (0 failing)** |
 | Plugin suite (39 tests, 49 028 checks) | `./build/VintageFilmAudio/VfaPluginTests` | **PASS (0 failing)** |
 | CTest wrapper | `ctest --test-dir build --output-on-failure` | **2/2 PASS** |
-| pluginval strictness 5 (VST3, incl. editor under Xvfb) | `xvfb-run -a pluginval --strictness-level 5 --validate "build/.../VST3/Vintage Film and TV.vst3"` | **PASS (exit 0, 19 test groups)** |
+| pluginval strictness 5 (VST3, incl. editor under Xvfb) | `xvfb-run -a pluginval --strictness-level 5 --validate "build/.../VST3/Heard it on TV.vst3"` | **PASS (exit 0, 19 test groups)** |
 | ASAN spot-run (DSP suite) | `build-asan/VintageFilmAudio/VfaDspTests` | **clean** (run during Phase 2; one test-side overrun found and fixed then) |
 | Subjective package render | `./build/VintageFilmAudio/VfaRenderPackage` | **generated** (35 stimuli + manifest, `TestOutput/SubjectivePackage/`) |
 

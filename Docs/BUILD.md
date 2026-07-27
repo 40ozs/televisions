@@ -6,7 +6,9 @@
 - JUCE Linux dependencies:
   `libasound2-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev
   libxinerama-dev libfreetype6-dev libfontconfig1-dev libcurl4-openssl-dev`
-- JUCE 8.0.8 (pinned, ADR-014), fetched to `external/JUCE`:
+- JUCE 8.0.8 (pinned, ADR-014). A fresh clone fetches it AUTOMATICALLY at
+  configure time (FetchContent, same pinned tag). To pin a local checkout
+  instead (offline builds):
   ```
   git clone --depth 1 --branch 8.0.8 https://github.com/juce-framework/JUCE.git external/JUCE
   ```
@@ -35,9 +37,10 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
 
 ## Artifacts (Release, Linux)
 
-- VST3: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/VST3/Vintage Film and TV.vst3`
-- Standalone: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/Standalone/Vintage Film and TV`
-- Shared-code static lib: `.../Release/libVintage Film and TV_SharedCode.a`
+- VST3: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/VST3/Heard it on TV.vst3`
+- Standalone: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/Standalone/Heard it on TV`
+- AU (macOS): `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/AU/Heard it on TV.component`
+- Shared-code static lib: `.../Release/libHeard it on TV_SharedCode.a`
 - Test executables: `build/VintageFilmAudio/VfaDspTests`, `build/VintageFilmAudio/VfaPluginTests`
 
 ## Tests

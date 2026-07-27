@@ -16,7 +16,7 @@ VfaEditor::VfaEditor (VfaProcessor& p)
     setLookAndFeel (nullptr);
 
     // ---- header
-    title.setText ("VINTAGE FILM & TV", juce::dontSendNotification);
+    title.setText ("HEARD IT ON TV", juce::dontSendNotification);
     title.setFont (juce::FontOptions (18.0f, juce::Font::bold));
     addAndMakeVisible (title);
 

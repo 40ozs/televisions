@@ -1,8 +1,8 @@
-# User Manual (Draft) — Vintage Film & TV
+# User Manual (Draft) — Heard it on TV (Oddity Audio)
 
 ## What this plugin is
 
-Vintage Film & TV transforms clean audio into historically plausible film and
+Heard it on TV transforms clean audio into historically plausible film and
 television sound from roughly 1950–1989 by emulating the **whole delivery
 chain**: period dynamics processing, the storage medium (optical, magnetic
 film, tape, broadcast, kinescope), repeated transfer generations, the
