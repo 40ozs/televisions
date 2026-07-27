@@ -9,9 +9,12 @@
 namespace vfa
 {
 
+// Threading note: the audio thread only ever touches lock-free atomics; all
+// deferred work (delivery-curve redesign, latency reporting to the host) is
+// polled by a message-thread Timer — never AsyncUpdater, whose trigger
+// allocates and must not be called from processBlock.
 class VfaProcessor : public juce::AudioProcessor,
                      private juce::AudioProcessorValueTreeState::Listener,
-                     private juce::AsyncUpdater,
                      private juce::Timer
 {
 public:
@@ -56,7 +59,6 @@ public:
 
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
-    void handleAsyncUpdate() override;
     void timerCallback() override;
     void setParamPlain (const juce::String& paramID, float plainValue);
 
@@ -71,6 +73,7 @@ private:
     std::atomic<bool> stateWasCorrupted { false };
     std::atomic<bool> deliveryDirty { false };
     std::atomic<int> latencyToReport { 0 };
+    int lastReportedLatency = 0;
 
     int currentProgram = 0;
     uint64_t autoSeedCounter = 1;

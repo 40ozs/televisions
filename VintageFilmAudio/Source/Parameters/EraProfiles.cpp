@@ -1,3 +1,4 @@
+#include <string_view>
 #include "EraProfiles.h"
 #include "ParameterIDs.h"
 
@@ -108,47 +109,55 @@ std::vector<ParamWrite> profileFor (Era era, Medium medium, Condition condition)
                                    + (medium == Medium::magneticFilm ? 3000.0f : 0.0f) });
     w.push_back ({ id::delLfRoll, 80.0f - 45.0f * eraLate });
 
-    // --- condition-driven degradation on top
+    // --- condition-driven degradation on top. Writes REPLACE any earlier
+    // entry for the same ID: a profile must contain each parameter at most
+    // once (PresetTest checks every entry against the recalled value).
+    auto set = [&w] (const char* pid, float value)
+    {
+        for (auto& e : w)
+            if (std::string_view (e.first) == pid) { e.second = value; return; }
+        w.push_back ({ pid, value });
+    };
     auto scaleUp = [&w] (const char* pid, float mult, float cap = 1.0f)
     {
         for (auto& e : w)
-            if (e.first == pid) { e.second = std::min (e.second * mult, cap); return; }
+            if (std::string_view (e.first) == pid) { e.second = std::min (e.second * mult, cap); return; }
     };
     switch (condition)
     {
-        case Condition::master: w.push_back ({ id::generation, 0.0f }); break;
-        case Condition::releasePrint: w.push_back ({ id::generation, 2.0f }); break;
-        case Condition::broadcast: w.push_back ({ id::generation, 2.0f }); break;
+        case Condition::master: set (id::generation, 0.0f); break;
+        case Condition::releasePrint: set (id::generation, 2.0f); break;
+        case Condition::broadcast: set (id::generation, 2.0f); break;
         case Condition::offAir:
-            w.push_back ({ id::generation, 3.0f });
-            w.push_back ({ id::nsDropout, 0.3f });
+            set (id::generation, 3.0f);
+            set (id::nsDropout, 0.3f);
             scaleUp (id::nsHum, 1.6f);
             scaleUp (id::nsBuzz, 1.6f);
             break;
         case Condition::workprint:
-            w.push_back ({ id::generation, 4.0f });
-            w.push_back ({ id::genVariability, 0.5f });
+            set (id::generation, 4.0f);
+            set (id::genVariability, 0.5f);
             scaleUp (id::nsCrackle, 1.8f);
             scaleUp (id::nsDirt, 1.8f);
             break;
         case Condition::wornArchive:
-            w.push_back ({ id::generation, 3.0f });
-            w.push_back ({ id::nsCrackle, 0.55f });
-            w.push_back ({ id::nsDirt, 0.5f });
-            w.push_back ({ id::nsDropout, 0.25f });
+            set (id::generation, 3.0f);
+            set (id::nsCrackle, 0.55f);
+            set (id::nsDirt, 0.5f);
+            set (id::nsDropout, 0.25f);
             scaleUp (id::wow, 1.8f);
             scaleUp (id::flutter, 1.6f);
             break;
         case Condition::multiGeneration:
-            w.push_back ({ id::generation, 6.0f });
-            w.push_back ({ id::genVariability, 0.5f });
+            set (id::generation, 6.0f);
+            set (id::genVariability, 0.5f);
             break;
         case Condition::damaged:
-            w.push_back ({ id::generation, 5.0f });
-            w.push_back ({ id::nsCrackle, 0.7f });
-            w.push_back ({ id::nsDirt, 0.65f });
-            w.push_back ({ id::nsDropout, 0.5f });
-            w.push_back ({ id::transportQuality, 4.0f });
+            set (id::generation, 5.0f);
+            set (id::nsCrackle, 0.7f);
+            set (id::nsDirt, 0.65f);
+            set (id::nsDropout, 0.5f);
+            set (id::transportQuality, 4.0f);
             scaleUp (id::wow, 2.5f);
             scaleUp (id::flutter, 2.0f);
             break;

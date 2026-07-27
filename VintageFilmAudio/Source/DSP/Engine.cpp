@@ -225,8 +225,13 @@ void Engine::process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& sna
     snap.medium = activeMedium;
 
     // ---- capture dry input
+    float inPeak = 0.0f;
     for (int ch = 0; ch < numCh; ++ch)
+    {
         dryBuffer.copyFrom (ch, 0, buffer, ch, 0, n);
+        inPeak = std::max (inPeak, buffer.getMagnitude (ch, 0, n));
+    }
+    meterIn.store (inPeak, std::memory_order_relaxed);
 
     // ---- input trim
     {
@@ -318,10 +323,6 @@ void Engine::process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& sna
         }
     }
 
-    // ---- safety limiter
-    if (snap.safetyLimiter)
-        applySafetyLimiter (buffer, n);
-
     // ---- auto gain (bounded +-6 dB, RMS matched; DSP_SPEC §11)
     {
         float dryAcc = dryRmsSq, wetAcc = wetRmsSq;
@@ -371,6 +372,20 @@ void Engine::process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& sna
                 dryDelayWrite = 0;
         }
     }
+
+    // ---- safety limiter: LAST, so it protects the actual output including
+    // output trim and dry mix (deviates from the brief's conceptual order —
+    // a defeatable protector that trim could overshoot would be pointless;
+    // recorded as DEV-006).
+    if (snap.safetyLimiter)
+        applySafetyLimiter (buffer, n);
+
+    // ---- meters
+    float outPeak = 0.0f;
+    for (int ch = 0; ch < numCh; ++ch)
+        outPeak = std::max (outPeak, buffer.getMagnitude (ch, 0, n));
+    meterOut.store (outPeak, std::memory_order_relaxed);
+    meterGr.store (dynamics.currentGainReductionDb(), std::memory_order_relaxed);
 }
 
 } // namespace vfa::dsp

@@ -44,17 +44,21 @@ private:
     struct ChannelState
     {
         OnePoleLP hf1, hf2;          // cascaded accumulated HF loss
-        Biquad tiltCorrect;          // keeps mids near unity as N rises
+        Biquad tiltCorrect;          // keeps 1 kHz near unity as N rises
         Biquad variabilityTilt;      // seeded per-generation tolerance tilt
-        EnvelopeFollower attackEnv;  // transient softening detector
-        OnePoleLP softenLp;
+        TransientSoftener softener;  // attack rounding grows with N
     };
+
+    void updateCoefficients (const ParamSnapshot& snap, float gens) noexcept;
 
     StreamSpec streamSpec;
     std::vector<ChannelState> channels;
-    Rng rng;
     float variabilityTiltDb = 0.0f;  // recomputed when seed/N changes
-    float lastGenApplied = -1.0f;
+    float lastGenApplied = -1.0f;    // cache key for the tilt correction
+    Medium lastMedium = Medium::clean;
+    int lastVariabilityGen = -1;     // round(N) the variability tilt was built for
+    float lastVariabilityAmt = -1.0f;
+    bool seedDirty = true;
     uint64_t seed = 1;
 };
 

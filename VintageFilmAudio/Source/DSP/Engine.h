@@ -62,7 +62,13 @@ public:
     int latencySamples (Quality q, Medium m) const noexcept;
     int currentLatencySamples() const noexcept { return activeLatency; }
 
-    float gainReductionDb() const noexcept { return dynamics.currentGainReductionDb(); }
+    float gainReductionDb() const noexcept { return meterGr.load (std::memory_order_relaxed); }
+
+    // Block-peak meters, written once per block on the audio thread with
+    // relaxed atomics; the editor polls them from a UI timer (SAS §5 — no
+    // queues needed for scalar meters).
+    float inputPeak() const noexcept  { return meterIn.load (std::memory_order_relaxed); }
+    float outputPeak() const noexcept { return meterOut.load (std::memory_order_relaxed); }
 
     static uint64_t resolveSeed (uint64_t userSeedOrZero, uint64_t autoCounter) noexcept;
 
@@ -107,6 +113,8 @@ private:
     enum class Transition { stable, rampDown, rampUp };
     Transition transition = Transition::stable;
     float transitionGain = 1.0f, transitionStep = 0.01f;
+
+    std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f }, meterGr { 0.0f };
     Quality activeQuality = Quality::standard;
     Medium activeMedium = Medium::magneticFilm;
     int activeLatency = 0;

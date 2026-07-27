@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "../Core/StreamSpec.h"
 #include "../Core/ParamSnapshot.h"
@@ -52,13 +53,26 @@ private:
         Biquad preEmph, deEmph;       // +/-10 dB shelf @ 4 kHz around the shaper
         EnvelopeFollower peakEnv;     // modulation-peak rounding detector
         DcBlocker dc;
+        float roundGain = 1.0f;       // modulation-peak rounding rider state
+        std::array<float, 64> dryRing {};  // latency-matched dry line for blend
+        int dryPos = 0;
     };
+
+    void designSlit (float cornerHz);
+    void designEmphasis (float shelfDb);
 
     StreamSpec streamSpec;
     std::vector<ChannelState> channels;
     std::unique_ptr<IImageSpreadStage> imageSpread;
     OversampledStage os;
     juce::AudioBuffer<float> scratch;
+
+    // Smoothed control state (no zipper on snapshot jumps).
+    float slitDesignedHz = -1.0f;
+    float emphDesignedDb = -1.0e9f;
+    float driveGain      = 1.0e-4f;
+    float wetMix         = 0.0f;
+    float intens         = 0.0f;
 };
 
 } // namespace vfa::dsp

@@ -24,12 +24,18 @@ private:
     struct ChannelState
     {
         Biquad speakerHp, speakerLp, cabinetRes, presence;
+        // Unity-magnitude all-passes sharing the band-limit filters' poles:
+        // they phase-align the equal-power blend's dry leg so the morph does
+        // not comb-cancel around the speaker corner frequencies.
+        Biquad dryAllpassHp, dryAllpassLp;
         DcBlocker dc;
     };
 
     StreamSpec streamSpec;
     std::vector<ChannelState> channels;
     OnePoleLP widthSmoother, monoSmoother, speakerSmoother;
+    float lastSpeakerAmount = -1.0f;   // coefficient cache key
+    bool primed = false;               // smoothers snap to targets on first block
 };
 
 } // namespace vfa::dsp

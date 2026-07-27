@@ -37,6 +37,8 @@ private:
         OnePoleLP hfLossPre;     // level/drive-dependent pre-shaper loss
         Biquad hfRestore;        // partial inverse tilt post-shaper
         Biquad gapLoss;          // fixed top-end shelf per medium variant
+        Biquad azimuthLoss;      // consumer-only fixed azimuth-style HF shelf
+        Biquad lowCut;           // lower band edge per medium variant
         EnvelopeFollower levelEnv;
         DcBlocker dc;
     };
@@ -44,6 +46,15 @@ private:
     StreamSpec streamSpec;
     std::vector<ChannelState> channels;
     OversampledStage os;
+
+    // Block-rate smoothed controls (zipper-free drive/EQ moves) and caches so
+    // biquad coefficients are only recomputed on a real change.
+    float smoothedDriveDb = -1000.0f;   // sentinel: snapped on first block
+    float smoothedBumpDb  = 0.0f;
+    int   cachedVariant   = -1;
+    int   cachedSpeed     = -1;
+    float cachedBumpDb    = -1000.0f;
+    float cachedRestoreDb = -1000.0f;
 };
 
 } // namespace vfa::dsp

@@ -35,6 +35,11 @@ VfaProcessor::VfaProcessor()
 
     for (const auto* pid : deliveryAffecting)
         apvts.addParameterListener (pid, this);
+
+    // Message-thread polling for redesigns and latency reports (RT-safe:
+    // the audio thread never posts messages). Runs for the processor's
+    // lifetime; each tick is a couple of atomic loads when idle.
+    startTimer (50);
 }
 
 VfaProcessor::~VfaProcessor()
@@ -172,6 +177,7 @@ void VfaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     engine.primeActive (snap);
     setLatencySamples (engine.currentLatencySamples());
     latencyToReport.store (engine.currentLatencySamples());
+    lastReportedLatency = engine.currentLatencySamples();
 }
 
 void VfaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -194,39 +200,26 @@ void VfaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuf
 
     engine.process (buffer, snap);
 
-    const int lat = engine.currentLatencySamples();
-    if (lat != latencyToReport.load (std::memory_order_relaxed))
-    {
-        latencyToReport.store (lat);
-        triggerAsyncUpdate();
-    }
+    latencyToReport.store (engine.currentLatencySamples(), std::memory_order_relaxed);
 }
 
 void VfaProcessor::parameterChanged (const juce::String&, float)
 {
     deliveryDirty.store (true, std::memory_order_release);
-    triggerAsyncUpdate();
-}
-
-void VfaProcessor::handleAsyncUpdate()
-{
-    setLatencySamples (latencyToReport.load());
-
-    if (deliveryDirty.exchange (false))
-    {
-        if (! engine.requestDeliveryRedesign (buildSnapshot()))
-        {
-            deliveryDirty.store (true);
-            startTimer (50);   // retry until the audio thread consumes staging
-            return;
-        }
-    }
-    stopTimer();
 }
 
 void VfaProcessor::timerCallback()
 {
-    handleAsyncUpdate();
+    const int lat = latencyToReport.load (std::memory_order_relaxed);
+    if (lat != lastReportedLatency)
+    {
+        lastReportedLatency = lat;
+        setLatencySamples (lat);
+    }
+
+    if (deliveryDirty.exchange (false))
+        if (! engine.requestDeliveryRedesign (buildSnapshot()))
+            deliveryDirty.store (true);   // staging busy: retry next tick
 }
 
 void VfaProcessor::setParamPlain (const juce::String& paramID, float plainValue)
@@ -309,8 +302,7 @@ void VfaProcessor::setStateInformation (const void* data, int sizeInBytes)
 
     stateWasCorrupted.store (false);
     apvts.replaceState (tree);
-    deliveryDirty.store (true);
-    triggerAsyncUpdate();
+    deliveryDirty.store (true);   // timer picks this up on the message thread
 }
 
 juce::AudioProcessorEditor* VfaProcessor::createEditor()

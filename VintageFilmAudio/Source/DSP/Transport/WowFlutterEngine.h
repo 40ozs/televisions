@@ -44,13 +44,23 @@ public:
     static float depthToSpeedFraction (float param01) noexcept;
 
 private:
+    // One deterministic stream per random purpose (ADR-016).
+    enum Purpose : uint32_t
+    {
+        purposeDrift = 0, purposeWowJitter = 1,
+        purposeFlutterNoise = 2, purposeScrape = 3
+    };
+
     struct ModulatorState
     {
-        Rng rng;
-        float driftState = 0, driftTarget = 0;
-        float wowPhase1 = 0, wowPhase2 = 0, wowJitter = 0;
-        float flutterPhase = 0;
-        OnePoleLP flutterNoiseLp, scrapeNoiseBp, driftLp, jitterLp;
+        Rng driftRng, jitterRng, flutterRng, scrapeRng;
+        float wowPhase1 = 0, wowPhase2 = 0, motorPhase = 0;
+        OnePoleLP driftLp1, driftLp2;                // leaky-integrated walk
+        OnePoleLP rateJitterLp, ampJitterLp;         // slow wow rate/amp jitter
+        Biquad flutterBp, scrapeBp;                  // narrowband noise shapers
+        float flutterHzApplied = -1, flutterNorm = 1; // cached bandpass design
+        float wowDepthSm = 0, flutterDepthSm = 0,    // ~50 ms depth smoothing
+              driftDepthSm = 0, scrapeDepthSm = 0;
         float lastValueMs = 0, nextValueMs = 0;      // control-rate endpoints
     };
 
@@ -61,6 +71,9 @@ private:
         ModulatorState mod;                          // used when unlinked
     };
 
+    void configureModulator (ModulatorState& m) noexcept;
+    void reseedModulator (ModulatorState& m, uint32_t channel) noexcept;
+    static void resetModulator (ModulatorState& m) noexcept;
     float computeControlValueMs (ModulatorState& m, const ParamSnapshot& snap,
                                  float depthScale) noexcept;
 
@@ -70,6 +83,10 @@ private:
     float centreDelaySamples = 0;
     int delayLineLength = 0;
     int controlCountdown = 0;
+    float controlRateHz = 1500.0f;                   // sampleRate / interval
+    float depthSmoothCoeff = 0.05f;                  // ~50 ms at control rate
+    float driftNorm = 1.0f, jitterNorm = 1.0f, ampJitterNorm = 1.0f,
+          scrapeNorm = 1.0f;                         // unit-RMS noise scaling
     uint64_t baseSeed = 1;
 };
 

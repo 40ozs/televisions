@@ -32,6 +32,7 @@ private:
     {
         Biquad preEmph, deEmph;   // shelving pair approximating 75 us
         Biquad ripple1, ripple2;  // small peaking ripple in the IF band
+        Biquad bandHp, bandLp;    // DSP_SPEC §3 band limit per broadcast medium
         DcBlocker dc;
     };
 
@@ -39,6 +40,12 @@ private:
     std::vector<ChannelState> channels;
     Biquad sideHfLoss;            // L-R path HF loss for MTS mode
     OversampledStage os;
+
+    // Block-rate smoothed intensity and caches so biquad coefficients are
+    // only recomputed on a real change.
+    float smoothedIntensity = -1.0f;    // sentinel: snapped on first block
+    float cachedIntensity   = -1.0f;
+    int   cachedBand        = -1;       // 0 = mono corners, 1 = stereo corners
 };
 
 } // namespace vfa::dsp
