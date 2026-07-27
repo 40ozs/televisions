@@ -39,3 +39,28 @@ Running log of work, deviations, and approximations. Newest last.
   incl. Academy anchors (−7 @40 Hz, −10 @5 kHz, −18 @8 kHz ±1.5 dB); CSV
   response exports in TestOutput/. ASAN run clean (a test-side buffer
   overrun was found by ASAN and fixed; module code was not at fault).
+
+## 2026-07-27 — Phases 3–8 (full chain, presets/UI, validation)
+- Modules implemented in parallel (optical, magnetic/broadcast, transport/
+  generation, noise, dynamics/reproduction) against frozen headers; each
+  self-verified; integrated with a clean full rebuild. All 62 DSP + 39
+  plugin tests pass; pluginval strictness 5 passes (VST3, editor incl.).
+- **DEV-006:** safety limiter moved to the true final output stage (after
+  mix/output trim) so it cannot be overshot by trims — deviates from the
+  brief's conceptual order; corner-case test enforces the ceiling.
+- **DEV-007 (bug found by pluginval, fixed):** the message-thread redesign
+  timer could fire before prepareToPlay allocated delivery FIR buffers →
+  heap corruption. Fixed with an enginePrepared gate + module buffer guard.
+  This same mechanism explained an earlier transient test corruption that
+  had been mis-attributed solely to mid-build header edits.
+- **DEV-008 (fixed):** small-speaker morph clicked under coarse automation
+  (raw-parameter coefficient jumps + binary stage gate against a phase-
+  shifted dry leg). Now tracks the smoothed amount and blends the stage in
+  continuously over the first 2 % of the range.
+- Subjective ABX package renderer added (synthetic license-free corpus;
+  bypass / 4 presets / EQ-only / generic-sat strawmen; level-matched,
+  seeded, randomized blind labels + manifest).
+- Benchmarks recorded (Docs/BENCHMARKS.md): Standard 48 kHz/512 ≈ 6.8 % of
+  real-time budget on the 4-core reference container.
+- NOTE: git push to origin currently returns 403 through the environment's
+  git proxy (fetch works); commits are local until push access recovers.

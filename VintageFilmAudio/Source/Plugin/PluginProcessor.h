@@ -72,6 +72,7 @@ private:
     juce::ValueTree defaultState;
     std::atomic<bool> stateWasCorrupted { false };
     std::atomic<bool> deliveryDirty { false };
+    std::atomic<bool> enginePrepared { false };
     std::atomic<int> latencyToReport { 0 };
     int lastReportedLatency = 0;
 

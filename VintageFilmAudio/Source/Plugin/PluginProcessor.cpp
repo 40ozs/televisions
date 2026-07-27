@@ -178,6 +178,7 @@ void VfaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     setLatencySamples (engine.currentLatencySamples());
     latencyToReport.store (engine.currentLatencySamples());
     lastReportedLatency = engine.currentLatencySamples();
+    enginePrepared.store (true, std::memory_order_release);
 }
 
 void VfaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -210,6 +211,11 @@ void VfaProcessor::parameterChanged (const juce::String&, float)
 
 void VfaProcessor::timerCallback()
 {
+    // Nothing to redesign or report before the engine has been prepared —
+    // the timer starts at construction and must not race prepareToPlay.
+    if (! enginePrepared.load (std::memory_order_acquire))
+        return;
+
     const int lat = latencyToReport.load (std::memory_order_relaxed);
     if (lat != lastReportedLatency)
     {

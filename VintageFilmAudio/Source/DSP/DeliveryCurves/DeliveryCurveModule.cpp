@@ -247,6 +247,10 @@ void DeliveryCurveModule::designNow (const ParamSnapshot& snap)
 
 bool DeliveryCurveModule::requestRedesign (const ParamSnapshot& snap)
 {
+    // Guard against calls before prepare() has allocated the path buffers
+    // (a message-thread timer can outrun the host's prepareToPlay).
+    if (next().taps.size() < (size_t) maxTaps)
+        return false;
     if (pending.load (std::memory_order_acquire) != 0)
         return false;
     designInto (next(), snap);

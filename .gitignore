@@ -12,3 +12,6 @@ build-*/
 
 # OS
 .DS_Store
+
+# Regenerable test artifacts (CSV responses, perf.json, subjective WAVs)
+TestOutput/

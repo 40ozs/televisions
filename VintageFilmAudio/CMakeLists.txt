@@ -185,3 +185,24 @@ endforeach()
 add_test(NAME DspSuite COMMAND VfaDspTests)
 add_test(NAME PluginSuite COMMAND VfaPluginTests)
 set_tests_properties(DspSuite PluginSuite PROPERTIES TIMEOUT 1800)
+
+# Subjective ABX/blind-comparison package renderer (TEST_PLAN §Reference).
+add_executable(VfaRenderPackage Tests/Reference/RenderReferencePackage.cpp)
+target_include_directories(VfaRenderPackage PRIVATE Tests Source
+    "${CMAKE_SOURCE_DIR}/external/JUCE/modules")
+target_link_libraries(VfaRenderPackage PRIVATE VintageFilmAudio)
+target_compile_definitions(VfaRenderPackage PRIVATE
+    JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1
+    JUCE_MODULE_AVAILABLE_juce_core=1
+    JUCE_MODULE_AVAILABLE_juce_events=1
+    JUCE_MODULE_AVAILABLE_juce_data_structures=1
+    JUCE_MODULE_AVAILABLE_juce_audio_basics=1
+    JUCE_MODULE_AVAILABLE_juce_audio_formats=1
+    JUCE_MODULE_AVAILABLE_juce_audio_processors=1
+    JUCE_MODULE_AVAILABLE_juce_audio_utils=1
+    JUCE_MODULE_AVAILABLE_juce_gui_basics=1
+    JUCE_MODULE_AVAILABLE_juce_gui_extra=1
+    JUCE_MODULE_AVAILABLE_juce_graphics=1
+    JUCE_MODULE_AVAILABLE_juce_dsp=1
+    JUCE_STANDALONE_APPLICATION=1
+)
