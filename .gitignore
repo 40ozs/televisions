@@ -1,0 +1,14 @@
+# External dependencies (fetched, not committed)
+external/
+
+# Build trees
+build/
+build-*/
+
+# Editor/IDE
+.vscode/
+.idea/
+*.user
+
+# OS
+.DS_Store

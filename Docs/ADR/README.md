@@ -1,0 +1,2 @@
+# ADR Index
+001 Reuse strategy | 002 Shared DSP boundaries | 003 Parameter/state/macros | 004 Delivery curves | 005 Optical model | 006 Wow/flutter | 007 Generation loss | 008 Noise generator | 009 Oversampling | 010 Quality modes | 011 Preset serialization/migration | 012 Visualization transport + test harness | 013 Channel strategy | 014 AAX/build/deps | 015 Convolution/IR licensing | 016 Deterministic randomness | 017 Trademark naming
