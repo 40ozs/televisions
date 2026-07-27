@@ -62,5 +62,28 @@ Running log of work, deviations, and approximations. Newest last.
   seeded, randomized blind labels + manifest).
 - Benchmarks recorded (Docs/BENCHMARKS.md): Standard 48 kHz/512 ≈ 6.8 % of
   real-time budget on the 4-core reference container.
-- NOTE: git push to origin currently returns 403 through the environment's
-  git proxy (fetch works); commits are local until push access recovers.
+- NOTE: git push to origin initially returned 403 through the environment's
+  git proxy; access recovered and the branch is pushed (history rewritten
+  once pre-merge to drop 58 MB of regenerable ABX WAVs; TestOutput/ is now
+  gitignored).
+
+## 2026-07-27 — Phase 8 adversarial review (8 confirmed findings, all fixed)
+An independent adversarial review pass confirmed and traced eight defects;
+all are fixed and re-validated (both suites + pluginval green):
+- F1 re-prepare vs redesign-timer race (crash-class): configMutex between
+  prepareToPlay and the message-thread timer + enginePrepared drop/raise.
+- F2 dry-path phase step when quality/medium switch changes latency at
+  mix<100 %: dry delay now slews with fractional interpolated reads.
+- F3 delivery staging wedge while the delivery slot is bypassed:
+  adoptPendingImmediately() consumes staged designs silently.
+- F4 formal race on currentIndex + vector copy-assign on the audio thread:
+  atomic index, pending-first check ordering, element-wise std::copy.
+- F5 stereo-link toggle stepped the transport delay by stale modulator
+  endpoints: endpoints handed across on link change.
+- F6 setCurrentProgram exposed a half-applied default/preset state to the
+  audio thread: single-pass final-value writes.
+- F7 Engine trusted host block-size contract: oversized blocks now chunked.
+- F8 buildSnapshot did ~5 000 string compares per block: constructor-
+  resolved named pointer cache; direct relaxed loads.
+Review verdict otherwise: allocation/lock-free audio path confirmed, denormal
+hardening present in every feedback element, staging protocol sound.

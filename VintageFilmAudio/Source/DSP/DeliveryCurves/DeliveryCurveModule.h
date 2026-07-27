@@ -36,6 +36,12 @@ public:
 
     bool isStagingPending() const noexcept { return pending.load (std::memory_order_acquire) != 0; }
 
+    // Adopt a staged design instantly without the audible crossfade — used
+    // by the Engine while this stage is fully bypassed (its output is not
+    // audible), so staging can never wedge behind a disabled slot (F3).
+    // Audio thread only; allocation-free.
+    void adoptPendingImmediately() noexcept;
+
     void process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& snap);
 
     // Full effective magnitude target (curve + advanced controls), for the
@@ -43,7 +49,10 @@ public:
     static std::vector<float> effectiveMagnitudeGrid (const ParamSnapshot& snap,
                                                       int gridSize, double sampleRate);
 
-    int activeTapCount() const noexcept { return path[(size_t) currentIndex].len; }
+    int activeTapCount() const noexcept
+    {
+        return path[(size_t) currentIndex.load (std::memory_order_relaxed)].len;
+    }
 
     static constexpr float lfCrossoverHz = 250.0f;
 
@@ -68,12 +77,15 @@ private:
 
     float processSamplePath (PathState& s, int ch, float x) noexcept;
 
-    PathState& current() noexcept { return path[(size_t) currentIndex]; }
-    PathState& next() noexcept { return path[(size_t) (1 - currentIndex)]; }
+    // currentIndex is written by the audio thread (crossfade completion /
+    // instant adopt) and read by the message thread when staging; atomic
+    // with relaxed ordering — the pending flag provides the handoff (F4).
+    PathState& current() noexcept { return path[(size_t) currentIndex.load (std::memory_order_relaxed)]; }
+    PathState& next() noexcept { return path[(size_t) (1 - currentIndex.load (std::memory_order_relaxed))]; }
 
     StreamSpec streamSpec;
     PathState path[2];
-    int currentIndex = 0;
+    std::atomic<int> currentIndex { 0 };
     std::atomic<int> pending { 0 };
     bool fading = false;
     float fade = 0.0f, fadeStep = 0.01f;

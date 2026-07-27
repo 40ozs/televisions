@@ -83,6 +83,7 @@ private:
     float centreDelaySamples = 0;
     int delayLineLength = 0;
     int controlCountdown = 0;
+    bool lastLinked = true;                          // link-toggle continuity (F5)
     float controlRateHz = 1500.0f;                   // sampleRate / interval
     float depthSmoothCoeff = 0.05f;                  // ~50 ms at control rate
     float driftNorm = 1.0f, jitterNorm = 1.0f, ampJitterNorm = 1.0f,

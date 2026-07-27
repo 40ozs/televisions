@@ -30,6 +30,33 @@ VfaProcessor::VfaProcessor()
     for (const auto& meta : params::allParams())
         raw.push_back (apvts.getRawParameterValue (meta.id));
 
+    // One-time resolution of the named audio-thread pointer cache (F8).
+    {
+        auto r = [this] (const char* pid) { return apvts.getRawParameterValue (pid); };
+        rp = { r (id::era), r (id::medium), r (id::condition), r (id::character),
+               r (id::fidelity), r (id::generation), r (id::genInteger),
+               r (id::genVariability), r (id::artifacts), r (id::noiseMacro),
+               r (id::deliveryCurve), r (id::mix), r (id::inTrim), r (id::outTrim),
+               r (id::autoGain), r (id::safetyLimiter), r (id::audition),
+               r (id::quality), r (id::seed),
+               r (id::deliveryOn), r (id::mediumOn), r (id::transportOn),
+               r (id::genOn), r (id::noiseOn), r (id::dynOn), r (id::reproOn),
+               r (id::delLfRoll), r (id::delHfRoll), r (id::delMidShape),
+               r (id::delAcademyAmt), r (id::delXcurveAmt), r (id::delPlaybackSize),
+               r (id::medOpticalDist), r (id::medOpticalMode), r (id::medImageSpread),
+               r (id::medMagSat), r (id::medTapeSpeed), r (id::medHeadBump),
+               r (id::medTransSoften), r (id::medCrosstalk),
+               r (id::wow), r (id::wowRate), r (id::flutter), r (id::flutterRate),
+               r (id::drift), r (id::scrape), r (id::stereoLink), r (id::transportQuality),
+               r (id::nsHiss), r (id::nsCell), r (id::nsBroadcast), r (id::nsHum),
+               r (id::nsHumFreq), r (id::nsHumHarm), r (id::nsBuzz), r (id::nsCrackle),
+               r (id::nsDirt), r (id::nsDropout), r (id::nsProjector),
+               r (id::nsPrintThrough), r (id::nsDuck), r (id::nsSilence), r (id::nsWidth),
+               r (id::dynAgc), r (id::dynComp), r (id::dynLimit), r (id::dynRelChar),
+               r (id::dynDialog), r (id::dynPump),
+               r (id::reproMono), r (id::monoLaw), r (id::reproWidth), r (id::reproSpeaker) };
+    }
+
     defaultState = apvts.copyState().createCopy();
     defaultState.setProperty (state::kVersionProperty, state::kStateVersion, nullptr);
 
@@ -62,92 +89,94 @@ dsp::ParamSnapshot VfaProcessor::buildSnapshot() const noexcept
 {
     using namespace dsp;
     ParamSnapshot s;
-    auto get = [this] (const char* pid) noexcept { auto* p = rawFor (pid); return p ? p->load (std::memory_order_relaxed) : 0.0f; };
+    // Direct relaxed loads through the constructor-resolved pointer cache —
+    // no lookups on the audio thread (F8).
+    auto get = [] (const std::atomic<float>* p) noexcept { return p->load (std::memory_order_relaxed); };
 
     macros::MacroValues mv;
-    mv.character = get (id::character);
-    mv.fidelity  = get (id::fidelity);
-    mv.artifacts = get (id::artifacts);
-    mv.noise     = get (id::noiseMacro);
+    mv.character = get (rp.character);
+    mv.fidelity  = get (rp.fidelity);
+    mv.artifacts = get (rp.artifacts);
+    mv.noise     = get (rp.noiseMacro);
 
-    s.inTrimDb = get (id::inTrim);
-    s.outTrimDb = get (id::outTrim);
-    s.mix01 = get (id::mix) * 0.01f;
-    s.autoGain = get (id::autoGain) >= 0.5f;
-    s.safetyLimiter = get (id::safetyLimiter) >= 0.5f;
-    s.audition = (AuditionMode) (int) get (id::audition);
-    s.quality = (Quality) (int) get (id::quality);
-    s.seed = dsp::Engine::resolveSeed ((uint64_t) get (id::seed), autoSeedCounter);
+    s.inTrimDb = get (rp.inTrim);
+    s.outTrimDb = get (rp.outTrim);
+    s.mix01 = get (rp.mix) * 0.01f;
+    s.autoGain = get (rp.autoGain) >= 0.5f;
+    s.safetyLimiter = get (rp.safetyLimiter) >= 0.5f;
+    s.audition = (AuditionMode) (int) get (rp.audition);
+    s.quality = (Quality) (int) get (rp.quality);
+    s.seed = dsp::Engine::resolveSeed ((uint64_t) get (rp.seed), autoSeedCounter);
 
-    s.deliveryOn = get (id::deliveryOn) >= 0.5f;
-    s.mediumOn = get (id::mediumOn) >= 0.5f;
-    s.transportOn = get (id::transportOn) >= 0.5f;
-    s.genOn = get (id::genOn) >= 0.5f;
-    s.noiseOn = get (id::noiseOn) >= 0.5f;
-    s.dynOn = get (id::dynOn) >= 0.5f;
-    s.reproOn = get (id::reproOn) >= 0.5f;
+    s.deliveryOn = get (rp.deliveryOn) >= 0.5f;
+    s.mediumOn = get (rp.mediumOn) >= 0.5f;
+    s.transportOn = get (rp.transportOn) >= 0.5f;
+    s.genOn = get (rp.genOn) >= 0.5f;
+    s.noiseOn = get (rp.noiseOn) >= 0.5f;
+    s.dynOn = get (rp.dynOn) >= 0.5f;
+    s.reproOn = get (rp.reproOn) >= 0.5f;
 
-    s.era = (Era) (int) get (id::era);
-    s.medium = (Medium) (int) get (id::medium);
-    s.condition = (Condition) (int) get (id::condition);
-    s.curveMode = (CurveMode) (int) get (id::deliveryCurve);
+    s.era = (Era) (int) get (rp.era);
+    s.medium = (Medium) (int) get (rp.medium);
+    s.condition = (Condition) (int) get (rp.condition);
+    s.curveMode = (CurveMode) (int) get (rp.deliveryCurve);
 
-    s.delLfRollHz = macros::effectiveLfRollHz (get (id::delLfRoll), mv.fidelity);
-    s.delHfRollHz = macros::effectiveHfRollHz (get (id::delHfRoll), mv.fidelity);
-    s.delMidShapeDb = macros::effectiveMidShapeDb (get (id::delMidShape), mv.character);
-    s.academyAmt = get (id::delAcademyAmt);
-    s.xcurveAmt = get (id::delXcurveAmt);
-    s.playbackSize = get (id::delPlaybackSize);
+    s.delLfRollHz = macros::effectiveLfRollHz (get (rp.delLfRoll), mv.fidelity);
+    s.delHfRollHz = macros::effectiveHfRollHz (get (rp.delHfRoll), mv.fidelity);
+    s.delMidShapeDb = macros::effectiveMidShapeDb (get (rp.delMidShape), mv.character);
+    s.academyAmt = get (rp.delAcademyAmt);
+    s.xcurveAmt = get (rp.delXcurveAmt);
+    s.playbackSize = get (rp.delPlaybackSize);
 
-    s.opticalDist = macros::effectiveDistortion (get (id::medOpticalDist), mv.fidelity);
-    s.imageSpread = get (id::medImageSpread);
-    s.magSat = macros::effectiveDistortion (get (id::medMagSat), mv.fidelity);
-    s.headBump = get (id::medHeadBump);
-    s.transSoften = macros::effectiveTransientSoften (get (id::medTransSoften), mv.character, mv.fidelity);
-    s.crosstalk = get (id::medCrosstalk);
-    s.opticalMode = (OpticalMode) (int) get (id::medOpticalMode);
-    s.tapeSpeed = (TapeSpeed) (int) get (id::medTapeSpeed);
+    s.opticalDist = macros::effectiveDistortion (get (rp.medOpticalDist), mv.fidelity);
+    s.imageSpread = get (rp.medImageSpread);
+    s.magSat = macros::effectiveDistortion (get (rp.medMagSat), mv.fidelity);
+    s.headBump = get (rp.medHeadBump);
+    s.transSoften = macros::effectiveTransientSoften (get (rp.medTransSoften), mv.character, mv.fidelity);
+    s.crosstalk = get (rp.medCrosstalk);
+    s.opticalMode = (OpticalMode) (int) get (rp.medOpticalMode);
+    s.tapeSpeed = (TapeSpeed) (int) get (rp.medTapeSpeed);
 
-    s.wow = get (id::wow);
-    s.wowRateHz = get (id::wowRate);
-    s.flutter = get (id::flutter);
-    s.flutterRateHz = get (id::flutterRate);
-    s.drift = get (id::drift);
-    s.scrape = get (id::scrape);
-    s.stereoLink = get (id::stereoLink) >= 0.5f;
-    s.transportQuality = (TransportQuality) (int) get (id::transportQuality);
+    s.wow = get (rp.wow);
+    s.wowRateHz = get (rp.wowRate);
+    s.flutter = get (rp.flutter);
+    s.flutterRateHz = get (rp.flutterRate);
+    s.drift = get (rp.drift);
+    s.scrape = get (rp.scrape);
+    s.stereoLink = get (rp.stereoLink) >= 0.5f;
+    s.transportQuality = (TransportQuality) (int) get (rp.transportQuality);
 
-    s.generations = get (id::generation);
-    s.genInteger = get (id::genInteger) >= 0.5f;
-    s.genVariability = get (id::genVariability);
+    s.generations = get (rp.generation);
+    s.genInteger = get (rp.genInteger) >= 0.5f;
+    s.genVariability = get (rp.genVariability);
 
-    s.nsHiss = macros::effectiveNoiseAmount (get (id::nsHiss), mv.noise, mv.fidelity);
-    s.nsCell = macros::effectiveNoiseAmount (get (id::nsCell), mv.noise, mv.fidelity);
-    s.nsBroadcast = macros::effectiveNoiseAmount (get (id::nsBroadcast), mv.noise, mv.fidelity);
-    s.nsHum = macros::effectiveNoiseAmount (get (id::nsHum), mv.noise, mv.fidelity);
-    s.nsHumHarm = get (id::nsHumHarm);
-    s.nsBuzz = macros::effectiveNoiseAmount (get (id::nsBuzz), mv.noise, mv.fidelity);
-    s.nsCrackle = macros::effectiveArtifactAmount (get (id::nsCrackle), mv.artifacts);
-    s.nsDirt = macros::effectiveArtifactAmount (get (id::nsDirt), mv.artifacts);
-    s.nsDropout = macros::effectiveArtifactAmount (get (id::nsDropout), mv.artifacts);
-    s.nsProjector = macros::effectiveArtifactAmount (get (id::nsProjector), mv.artifacts);
-    s.nsPrintThrough = macros::effectiveArtifactAmount (get (id::nsPrintThrough), mv.artifacts);
-    s.nsDuck = get (id::nsDuck);
-    s.nsWidth = get (id::nsWidth);
-    s.nsSilence = get (id::nsSilence) >= 0.5f;
-    s.humFreqHz = ((int) get (id::nsHumFreq)) == 0 ? 50.0f : 60.0f;
+    s.nsHiss = macros::effectiveNoiseAmount (get (rp.nsHiss), mv.noise, mv.fidelity);
+    s.nsCell = macros::effectiveNoiseAmount (get (rp.nsCell), mv.noise, mv.fidelity);
+    s.nsBroadcast = macros::effectiveNoiseAmount (get (rp.nsBroadcast), mv.noise, mv.fidelity);
+    s.nsHum = macros::effectiveNoiseAmount (get (rp.nsHum), mv.noise, mv.fidelity);
+    s.nsHumHarm = get (rp.nsHumHarm);
+    s.nsBuzz = macros::effectiveNoiseAmount (get (rp.nsBuzz), mv.noise, mv.fidelity);
+    s.nsCrackle = macros::effectiveArtifactAmount (get (rp.nsCrackle), mv.artifacts);
+    s.nsDirt = macros::effectiveArtifactAmount (get (rp.nsDirt), mv.artifacts);
+    s.nsDropout = macros::effectiveArtifactAmount (get (rp.nsDropout), mv.artifacts);
+    s.nsProjector = macros::effectiveArtifactAmount (get (rp.nsProjector), mv.artifacts);
+    s.nsPrintThrough = macros::effectiveArtifactAmount (get (rp.nsPrintThrough), mv.artifacts);
+    s.nsDuck = get (rp.nsDuck);
+    s.nsWidth = get (rp.nsWidth);
+    s.nsSilence = get (rp.nsSilence) >= 0.5f;
+    s.humFreqHz = ((int) get (rp.nsHumFreq)) == 0 ? 50.0f : 60.0f;
 
-    s.agc = get (id::dynAgc);
-    s.comp = macros::effectiveCompression (get (id::dynComp), mv.character);
-    s.limit = get (id::dynLimit);
-    s.relChar = get (id::dynRelChar);
-    s.dialog = get (id::dynDialog);
-    s.pump = get (id::dynPump);
+    s.agc = get (rp.dynAgc);
+    s.comp = macros::effectiveCompression (get (rp.dynComp), mv.character);
+    s.limit = get (rp.dynLimit);
+    s.relChar = get (rp.dynRelChar);
+    s.dialog = get (rp.dynDialog);
+    s.pump = get (rp.dynPump);
 
-    s.monoMode = (MonoMode) (int) get (id::reproMono);
-    s.monoLaw = (MonoLaw) (int) get (id::monoLaw);
-    s.width = get (id::reproWidth);
-    s.smallSpeaker = get (id::reproSpeaker);
+    s.monoMode = (MonoMode) (int) get (rp.reproMono);
+    s.monoLaw = (MonoLaw) (int) get (rp.monoLaw);
+    s.width = get (rp.reproWidth);
+    s.smallSpeaker = get (rp.reproSpeaker);
 
     return s;
 }
@@ -162,6 +191,12 @@ bool VfaProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 
 void VfaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    // Block the redesign timer for the whole reconfiguration; also drop the
+    // prepared flag so a timer tick that raced past the mutex acquisition
+    // order cannot design into buffers that are being reallocated.
+    enginePrepared.store (false, std::memory_order_release);
+    const std::lock_guard<std::mutex> lock (configMutex);
+
     const dsp::StreamSpec spec { sampleRate,
                                  std::max (samplesPerBlock, 16),
                                  std::max (getTotalNumOutputChannels(), 1) };
@@ -192,7 +227,7 @@ void VfaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuf
 
     // Seed changes applied at block boundaries on the audio thread (safe:
     // same thread owns the rng state; setSeed is allocation-free).
-    const float seedNow = rawFor (id::seed)->load (std::memory_order_relaxed);
+    const float seedNow = rp.seed->load (std::memory_order_relaxed);
     if (seedNow != lastSeedParam)
     {
         lastSeedParam = seedNow;
@@ -213,7 +248,12 @@ void VfaProcessor::timerCallback()
 {
     // Nothing to redesign or report before the engine has been prepared —
     // the timer starts at construction and must not race prepareToPlay.
+    // try_lock (never block the message thread): if a prepare is running,
+    // simply retry on the next tick.
     if (! enginePrepared.load (std::memory_order_acquire))
+        return;
+    const std::unique_lock<std::mutex> lock (configMutex, std::try_to_lock);
+    if (! lock.owns_lock() || ! enginePrepared.load (std::memory_order_acquire))
         return;
 
     const int lat = latencyToReport.load (std::memory_order_relaxed);
@@ -266,15 +306,18 @@ void VfaProcessor::setCurrentProgram (int index)
         return;
     currentProgram = index;
 
-    // Reset to defaults, then apply the preset writes.
+    // Single pass: each parameter is written exactly once with its final
+    // value (preset override if present, else default). A reset-then-apply
+    // sequence would let the audio thread snapshot a half-applied state
+    // between the two passes (review finding F6).
+    const auto& values = list[(size_t) index].values;
     for (const auto& meta : params::allParams())
-        setParamPlain (meta.id, meta.type == params::ParamMeta::Type::Choice
-                                    || meta.type == params::ParamMeta::Type::Bool
-                                    || meta.type == params::ParamMeta::Type::Int
-                                ? meta.def
-                                : meta.def);
-    for (const auto& [pid, value] : list[(size_t) index].values)
-        setParamPlain (pid, value);
+    {
+        float target = meta.def;
+        for (const auto& [pid, value] : values)
+            if (std::string_view (pid) == meta.id) { target = value; break; }
+        setParamPlain (meta.id, target);
+    }
 }
 
 // --------------------------------------------------------------------- state

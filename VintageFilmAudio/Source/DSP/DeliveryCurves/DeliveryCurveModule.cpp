@@ -240,18 +240,37 @@ void DeliveryCurveModule::designNow (const ParamSnapshot& snap)
 {
     designInto (path[0], snap);
     designInto (path[1], snap);
-    currentIndex = 0;
+    currentIndex.store (0, std::memory_order_relaxed);
     pending.store (0, std::memory_order_release);
     fading = false;
 }
 
+void DeliveryCurveModule::adoptPendingImmediately() noexcept
+{
+    if (pending.load (std::memory_order_acquire) != 1 || fading)
+        return;
+    // Output is bypassed: swap without fading and clear both paths' state so
+    // re-enable starts clean. Bounded fills, no allocation.
+    currentIndex.store (1 - currentIndex.load (std::memory_order_relaxed),
+                        std::memory_order_relaxed);
+    for (auto& s : path)
+    {
+        for (auto& h : s.history) std::fill (h.begin(), h.end(), 0.0f);
+        std::fill (s.writePos.begin(), s.writePos.end(), 0);
+        for (auto& b : s.shelf1) b.reset();
+        for (auto& b : s.shelf2) b.reset();
+    }
+    pending.store (0, std::memory_order_release);
+}
+
 bool DeliveryCurveModule::requestRedesign (const ParamSnapshot& snap)
 {
-    // Guard against calls before prepare() has allocated the path buffers
-    // (a message-thread timer can outrun the host's prepareToPlay).
-    if (next().taps.size() < (size_t) maxTaps)
-        return false;
+    // Order matters (F4): check the pending handoff flag FIRST — while it is
+    // 0 the audio thread will not swap currentIndex, so reading next() after
+    // the acquire is race-free. Then guard against pre-prepare calls.
     if (pending.load (std::memory_order_acquire) != 0)
+        return false;
+    if (next().taps.size() < (size_t) maxTaps)
         return false;
     designInto (next(), snap);
     pending.store (1, std::memory_order_release);
@@ -314,7 +333,11 @@ void DeliveryCurveModule::process (juce::AudioBuffer<float>& buffer, const Param
         fade = 0.0f;
         for (int ch = 0; ch < numCh; ++ch)
         {
-            next().history[(size_t) ch] = current().history[(size_t) ch];
+            // Element-wise copies (never vector assignment: allocation-free
+            // by contract on the audio thread, review finding F4).
+            auto& dstH = next().history[(size_t) ch];
+            const auto& srcH = current().history[(size_t) ch];
+            std::copy (srcH.begin(), srcH.end(), dstH.begin());
             next().writePos[(size_t) ch] = current().writePos[(size_t) ch];
             // Carry filter state across so the fade compares like with like.
             next().shelf1[(size_t) ch].z1 = current().shelf1[(size_t) ch].z1;
@@ -350,7 +373,8 @@ void DeliveryCurveModule::process (juce::AudioBuffer<float>& buffer, const Param
 
     if (fade >= 1.0f)
     {
-        currentIndex = 1 - currentIndex;
+        currentIndex.store (1 - currentIndex.load (std::memory_order_relaxed),
+                            std::memory_order_relaxed);
         fading = false;
         pending.store (0, std::memory_order_release);
     }

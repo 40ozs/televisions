@@ -253,6 +253,28 @@ void WowFlutterEngine::process (juce::AudioBuffer<float>& buffer, const ParamSna
     const float minDelay = 4.0f;
     const float maxDelay = (float) delayLineLength - 5.0f;
 
+    // Link-mode change: the newly selected modulator's control endpoints may
+    // be stale (frozen at whatever they held when it last ran), which would
+    // step the read position by up to the full excursion in one sample.
+    // Hand the active endpoints across so the delay stays continuous (F5).
+    if (linked != lastLinked)
+    {
+        if (linked)
+        {
+            linkedMod.lastValueMs = channels[0].mod.lastValueMs;
+            linkedMod.nextValueMs = channels[0].mod.nextValueMs;
+        }
+        else
+        {
+            for (auto& c : channels)
+            {
+                c.mod.lastValueMs = linkedMod.lastValueMs;
+                c.mod.nextValueMs = linkedMod.nextValueMs;
+            }
+        }
+        lastLinked = linked;
+    }
+
     for (int i = 0; i < n; ++i)
     {
         if (controlCountdown <= 0)

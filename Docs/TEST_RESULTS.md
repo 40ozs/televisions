@@ -59,6 +59,12 @@ Per-area coverage highlights (all inside the two suites):
    paths. Fixed (smoothed-amount coefficient tracking + continuous stage
    blend). Re-validated.
 3. Test-side buffer overrun in the delivery crossfade test (found by ASAN).
+4. Adversarial review pass: 8 further confirmed findings (F1–F8, see
+   IMPLEMENTATION_LOG) — re-prepare race, dry-path latency step, staging
+   wedge behind a bypassed slot, formal atomicity/copy issues, stereo-link
+   delay step, half-applied preset state, missing block-size guard,
+   audio-thread string lookups. All fixed; both suites + pluginval re-run
+   green after the fixes.
 
 ## Format matrix (honest)
 

@@ -46,7 +46,8 @@ public:
         activeQuality = snap.quality;
         activeMedium = snap.medium;
         activeLatency = latencySamples (activeQuality, activeMedium);
-        dryDelayLength = std::min (activeLatency, dryDelayLine.getNumSamples() - 1);
+        dryDelayTarget = std::min (activeLatency, dryDelayLine.getNumSamples() - 1);
+        dryDelaySmoothed = (float) dryDelayTarget;
         transition = Transition::stable;
         transitionGain = 1.0f;
     }
@@ -73,6 +74,7 @@ public:
     static uint64_t resolveSeed (uint64_t userSeedOrZero, uint64_t autoCounter) noexcept;
 
 private:
+    void processChunk (juce::AudioBuffer<float>& buffer, const ParamSnapshot& snap);
     void processMediumStage (juce::AudioBuffer<float>& buffer, const ParamSnapshot& snap);
     void applySafetyLimiter (juce::AudioBuffer<float>& buffer, int numSamples);
 
@@ -103,10 +105,13 @@ private:
     float dryRmsSq = 0.0f, wetRmsSq = 0.0f;
     float rmsCoeff = 0.0f, autoGainCoeff = 0.0f;
 
-    // Dry path (latency-aligned for mix)
+    // Dry path (latency-aligned for mix). The delay length slews toward its
+    // target with fractional interpolated reads so latency changes at
+    // quality/medium switches cannot step the dry leg (review finding F2).
     juce::AudioBuffer<float> dryBuffer;      // this block's input
     juce::AudioBuffer<float> dryDelayLine;   // ring buffer, maxLatency
-    int dryDelayWrite = 0, dryDelayLength = 0;
+    int dryDelayWrite = 0, dryDelayTarget = 0;
+    float dryDelaySmoothed = 0.0f;
     juce::AudioBuffer<float> preNoise;       // for artifacts-only audition
 
     // Quality/medium transition machine (DEV-004)

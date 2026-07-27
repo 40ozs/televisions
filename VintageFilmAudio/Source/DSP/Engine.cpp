@@ -64,7 +64,8 @@ void Engine::prepare (const StreamSpec& spec)
     activeQuality = Quality::standard;
     activeMedium = Medium::magneticFilm;
     activeLatency = latencySamples (activeQuality, activeMedium);
-    dryDelayLength = std::min (activeLatency, dryDelayLine.getNumSamples() - 1);
+    dryDelayTarget = std::min (activeLatency, dryDelayLine.getNumSamples() - 1);
+    dryDelaySmoothed = (float) dryDelayTarget;
 }
 
 void Engine::reset()
@@ -211,6 +212,26 @@ void Engine::applySafetyLimiter (juce::AudioBuffer<float>& buffer, int n)
 
 void Engine::process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& snapIn)
 {
+    // Hosts must not exceed the prepared block size, but a violation would
+    // write past preallocated buffers in a release build — chunk instead of
+    // trusting the contract (review finding F7).
+    const int total = buffer.getNumSamples();
+    if (total <= streamSpec.maxBlockSize)
+    {
+        processChunk (buffer, snapIn);
+        return;
+    }
+    for (int offset = 0; offset < total; offset += streamSpec.maxBlockSize)
+    {
+        const int len = std::min (streamSpec.maxBlockSize, total - offset);
+        juce::AudioBuffer<float> view (buffer.getArrayOfWritePointers(),
+                                       buffer.getNumChannels(), offset, len);
+        processChunk (view, snapIn);
+    }
+}
+
+void Engine::processChunk (juce::AudioBuffer<float>& buffer, const ParamSnapshot& snapIn)
+{
     const int numCh = std::min (buffer.getNumChannels(), streamSpec.numChannels);
     const int n = buffer.getNumSamples();
     if (n == 0 || numCh == 0)
@@ -263,6 +284,11 @@ void Engine::process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& sna
 
     deliverySlot.setEnabled (snap.deliveryOn);
     deliverySlot.process (buffer, [&] (juce::AudioBuffer<float>& b) { delivery.process (b, snap); });
+    // A staged redesign is normally consumed inside delivery.process(); when
+    // the slot is fully bypassed that never runs and staging would wedge all
+    // future redesigns (review finding F3) — adopt silently instead.
+    if (deliverySlot.isFullyBypassed() && delivery.isStagingPending())
+        delivery.adoptPendingImmediately();
 
     reproSlot.setEnabled (snap.reproOn);
     reproSlot.process (buffer, [&] (juce::AudioBuffer<float>& b) { reproduction.process (b, snap); });
@@ -305,7 +331,9 @@ void Engine::process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& sna
                     activeMedium = snapIn.medium;
                     optical.reset(); magnetic.reset(); broadcast.reset();
                     activeLatency = latencySamples (activeQuality, activeMedium);
-                    dryDelayLength = std::min (activeLatency, dryDelayLine.getNumSamples() - 1);
+                    // Only the target moves; the dry read offset slews there
+                    // with fractional reads (F2 — no dry-path phase step).
+                    dryDelayTarget = std::min (activeLatency, dryDelayLine.getNumSamples() - 1);
                     transition = Transition::rampUp;
                 }
             }
@@ -350,25 +378,36 @@ void Engine::process (juce::AudioBuffer<float>& buffer, const ParamSnapshot& sna
         }
     }
 
-    // ---- mix with latency-aligned dry, then output trim
+    // ---- mix with latency-aligned dry, then output trim. The dry delay is
+    // read fractionally and slewed toward its target (~0.05 samples/sample)
+    // so latency changes never step the dry leg (F2).
     {
         const float mixTarget = snap.mix01;
         const float outTarget = dbToGain (snap.outTrimDb);
+        const int ringLen = dryDelayLine.getNumSamples();
         for (int i = 0; i < n; ++i)
         {
             const float m = mixSmooth.process (mixTarget);
             const float og = outTrimSmooth.process (outTarget);
-            int readPos = dryDelayWrite - dryDelayLength;
-            if (readPos < 0) readPos += dryDelayLine.getNumSamples();
+
+            const float diff = (float) dryDelayTarget - dryDelaySmoothed;
+            dryDelaySmoothed += std::clamp (diff, -0.05f, 0.05f);
+            const int di = (int) dryDelaySmoothed;
+            const float frac = dryDelaySmoothed - (float) di;
+            int rp0 = dryDelayWrite - di;
+            if (rp0 < 0) rp0 += ringLen;
+            int rp1 = rp0 - 1;
+            if (rp1 < 0) rp1 += ringLen;
+
             for (int ch = 0; ch < numCh; ++ch)
             {
                 auto* ring = dryDelayLine.getWritePointer (ch);
                 ring[dryDelayWrite] = dryBuffer.getReadPointer (ch)[i];
-                const float dryDelayed = ring[readPos];
+                const float dryDelayed = ring[rp0] + frac * (ring[rp1] - ring[rp0]);
                 auto* d = buffer.getWritePointer (ch);
                 d[i] = (d[i] * m + dryDelayed * (1.0f - m)) * og;
             }
-            if (++dryDelayWrite >= dryDelayLine.getNumSamples())
+            if (++dryDelayWrite >= ringLen)
                 dryDelayWrite = 0;
         }
     }
