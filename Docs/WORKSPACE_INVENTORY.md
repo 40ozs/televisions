@@ -53,6 +53,11 @@ that can be broken**. Consequences:
 
 ## 3. Research document status — IMPORTANT DEVIATION RECORD
 
+**UPDATE 2026-07-27: RESOLVED.** The research document was supplied after the
+MVP was built and has been reconciled clause-by-clause — see
+Docs/RESEARCH_RECONCILIATION.md. The reconstruction below is retained as the
+Phase-0 record.
+
 The task designates
 *“Vintage Film & TV Audio (1950s–1980s): Historical Sonic Characteristics and a
 Plugin Design for Era-Accurate Emulation”* as the primary design authority and

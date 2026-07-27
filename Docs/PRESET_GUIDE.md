@@ -10,10 +10,11 @@ Design rules:
    (optical, magnetic, tape, kinescope, broadcast mono/stereo, consumer),
    fidelity extremes (master ↔ damaged), dialogue and full-mix intents.
 
-## Factory presets (MVP, 16)
+## Factory presets (MVP, 17)
 
 | # | Name | Era / Medium / Condition | Intent |
 |---|---|---|---|
+| 0 | 1938 Optical Mono | Early 1950s profile base / Optical Mono / Release Print | research-doc Stage-1 benchmark: pre-war Academy optical, narrowed top, dense cell noise |
 | 1 | 1950s Theater Dialogue | Early 1950s / Optical Mono / Release Print | Academy curve, moderate optical distortion, studio dialogue |
 | 2 | 1950s Magnetic Widescreen | Late 1950s / Magnetic Film / Master | wide-BW magnetic road-show feel, low artifacts |
 | 3 | Early Television Kinescope | Early 1950s / Kinescope / Broadcast | kinescope curve, heavy band limit, hum + buzz |

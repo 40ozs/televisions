@@ -214,7 +214,9 @@ VFA_TEST (Medium_magnetic_level_dependent_hf_loss)
     CHECK_MSG (relQuiet - relHot >= 1.5, msg);
 }
 
-// 6. Broadcast band limits (§3) and receiver ripple: mono 100 Hz-5 kHz,
+// 6. Broadcast band limits and receiver ripple. Research doc §1.3: the NTSC
+//    aural carrier supported ~10-15 kHz — mono transmission is asserted at a
+//    ~10 kHz corner (the tinny-set sound belongs to the Reproduction stage);
 //    stereo (MTS) 50 Hz-14 kHz.
 VFA_TEST (Medium_broadcast_bandwidth_and_ripple)
 {
@@ -223,9 +225,13 @@ VFA_TEST (Medium_broadcast_bandwidth_and_ripple)
     const auto mono = bcSnap (Medium::broadcastMono);
     const double monoRef = bcRespDb (mono, 1000.0, amp, 1, 1.0f);
     checkCorner (bcRespDb (mono, 100.0, amp, 1, 1.0f) - monoRef, "mono 100 Hz corner");
-    checkCorner (bcRespDb (mono, 5000.0, amp, 1, 1.0f) - monoRef, "mono 5 kHz corner");
+    checkCorner (bcRespDb (mono, 10000.0, amp, 1, 1.0f) - monoRef, "mono 10 kHz corner");
     CHECK_MSG (bcRespDb (mono, 50.0, amp, 1, 1.0f) - monoRef < -6.0, "mono 50 Hz < -6 dB");
-    CHECK_MSG (bcRespDb (mono, 10000.0, amp, 1, 1.0f) - monoRef < -12.0, "mono 10 kHz < -12 dB");
+    const double mono5k = bcRespDb (mono, 5000.0, amp, 1, 1.0f) - monoRef;
+    char m5[96];
+    std::snprintf (m5, sizeof (m5), "mono 5 kHz %.2f dB (want in-band, -2..+1)", mono5k);
+    CHECK_MSG (mono5k > -2.0 && mono5k < 1.0, m5);
+    CHECK_MSG (bcRespDb (mono, 16000.0, amp, 1, 1.0f) - monoRef < -6.0, "mono 16 kHz < -6 dB");
 
     const auto st = bcSnap (Medium::broadcastStereo);
     const double stRef = bcRespDb (st, 1000.0, amp, 2, 1.0f);

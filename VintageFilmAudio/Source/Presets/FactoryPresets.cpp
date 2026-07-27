@@ -36,6 +36,17 @@ std::vector<std::pair<const char*, float>> make (Era era, Medium medium, Conditi
 const std::vector<FactoryPreset>& factoryPresets()
 {
     static const std::vector<FactoryPreset> presets = {
+        // Research-doc Stage-1 benchmark preset: pre-1950 Academy optical.
+        // Uses the earliest era profile; overrides narrow the top end toward
+        // late-1930s prints and raise cell noise/optical density (HIST-APPROX).
+        { "1938 Optical Mono",
+          make (Era::early1950s, Medium::opticalMono, Condition::releasePrint,
+                { { id::deliveryCurve, 1.0f },   // Academy
+                  { id::delHfRoll, 8000.0f }, { id::delLfRoll, 90.0f },
+                  { id::medOpticalDist, 0.55f }, { id::medImageSpread, 0.5f },
+                  { id::nsCell, 0.4f }, { id::nsCrackle, 0.3f }, { id::nsDirt, 0.22f },
+                  { id::nsProjector, 0.2f }, { id::generation, 2.0f },
+                  { id::dynComp, 0.4f }, { id::fidelity, 0.55f } }) },
         { "1950s Theater Dialogue",
           make (Era::early1950s, Medium::opticalMono, Condition::releasePrint,
                 { { id::dynDialog, 0.35f }, { id::character, 0.4f } }) },

@@ -84,8 +84,9 @@ void fillSine (juce::AudioBuffer<float>& buf, double hz, float amp)
 }
 } // namespace
 
-// 1. Hiss RMS calibration: magneticFilm SNR 55 dB below -18 dBFS -> -73 dBFS
-//    at param 0.5 (+-3 dB); param 1.0 sits 10-25 dB above that.
+// 1. Hiss RMS calibration: magneticFilm SNR 62 dB (research doc §1.5:
+//    studio/35 mm magnetic 60-75 dB) below -18 dBFS -> -80 dBFS at param 0.5
+//    (+-3 dB); param 1.0 sits 10-25 dB above that.
 VFA_TEST (Noise_hiss_level_calibration)
 {
     NoiseArtifactEngine eng;
@@ -99,7 +100,7 @@ VFA_TEST (Noise_hiss_level_calibration)
     eng.reset();
     render (eng, buf, snap);
     const double dbHalf = rmsDbRange (buf, 0, 12000, 84000);
-    CHECK_NEAR (dbHalf, -73.0, 3.0);
+    CHECK_NEAR (dbHalf, -80.0, 3.0);
 
     snap.nsHiss = 1.0f;
     buf.clear();

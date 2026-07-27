@@ -1,9 +1,13 @@
 # DSP Design Specification — VintageFilmAudio
 
+Reconciled against the primary research document on 2026-07-27 — see
+Docs/RESEARCH_RECONCILIATION.md for the clause-by-clause mapping.
+
 Marker convention: **HIST-APPROX** flags values that are engineering
-approximations of historical behavior rather than verified measurements
-(see Docs/WORKSPACE_INVENTORY.md §3 — the primary research document was absent;
-numeric targets quoted in the task brief are treated as authoritative).
+approximations of historical behavior rather than document-verified
+measurements. (Originally the primary research document was absent — see
+Docs/WORKSPACE_INVENTORY.md §3; values it later verified or corrected are
+tracked in Docs/RESEARCH_RECONCILIATION.md §1–2.)
 
 Reference level: **−18 dBFS = 0 VU nominal** (ADR gain staging). All nonlinear
 stages are calibrated so that −18 dBFS sine input at 1 kHz produces ≤0.5 dB
@@ -69,12 +73,12 @@ mono collapse, crosstalk (stereo media only).
 
 | Medium | Bandwidth (HIST-APPROX) | Nonlinearity | SNR target | Format |
 |---|---|---|---|---|
-| Optical mono | 60 Hz–7.5 kHz | §4 optical | ~38 dB | mono collapse |
-| Optical stereo (’77-era) | 50 Hz–10 kHz | §4 optical, milder | ~48 dB | stereo, crosstalk −35 dB |
-| Magnetic film | 40 Hz–14 kHz | tanh-family + bias-loss, head bump +1.5 dB @ 60 Hz | ~55 dB | stereo |
-| Field tape (portable ¼", 7.5 ips) | 50 Hz–12 kHz | tape sat, head bump +2 dB @ 55 Hz | ~52 dB | mono/stereo |
+| Optical mono | 60 Hz–12.5 kHz (research doc §1.2; Academy curve supplies the audible rolloff) | §4 optical | ~42 dB | mono collapse |
+| Optical stereo (’77-era) | 50 Hz–13 kHz (with NR) | §4 optical, milder | ~48 dB | stereo, crosstalk −35 dB |
+| Magnetic film | 40 Hz–14 kHz | tanh-family + bias-loss, head bump +1.5 dB @ 60 Hz | ~62 dB | stereo |
+| Field tape (portable ¼", 7.5 ips) | 50 Hz–12 kHz | tape sat, head bump +2 dB @ 55 Hz | ~68 dB (Nagra-class NAB @ 7.5 ips) | mono/stereo |
 | Kinescope | per §2 curve | mild VD-optical | ~35 dB | mono |
-| Broadcast mono | 100 Hz–5 kHz + §7 chain | transmitter soft clip | ~45 dB | mono |
+| Broadcast mono | 100 Hz–10 kHz transmission + §7 chain (receiver character lives in Reproduction) | transmitter soft clip | ~45 dB | mono |
 | Broadcast stereo (MTS) | 50 Hz–14 kHz + §7 | mild | ~55 dB | stereo, L−R noise +6 dB |
 | Consumer recording | 60 Hz–9 kHz | heavier tape sat | ~40 dB | stereo, azimuth HF loss |
 | Clean | full | none | ∞ | as input |

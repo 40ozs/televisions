@@ -30,7 +30,10 @@ constexpr float kRipple2Hz = 7000.0f, kRipple2Db = -1.0f, kRipple2Q = 1.2f;
 
 // DSP_SPEC §3 band limits. The lowpass corners sit slightly below the table
 // values so the total chain (band limit + ripple) measures -3 dB there.
-constexpr float kMonoLowHz   = 100.0f, kMonoHighHz   = 4700.0f;  // 100 Hz-5 kHz
+// Research doc §1.3: the NTSC aural carrier itself supported ~10-15 kHz —
+// the tinny-TV sound came from receivers/speakers (Reproduction stage), not
+// the transmission. Corner tuned so the measured -3 dB lands near 10 kHz.
+constexpr float kMonoLowHz   = 100.0f, kMonoHighHz   = 9400.0f;  // 100 Hz-10 kHz
 constexpr float kStereoLowHz = 50.0f,  kStereoHighHz = 13200.0f; // 50 Hz-14 kHz
 
 // MTS stereo: L-R subcarrier HF loss ~-6 dB @ 10 kHz (shelf plateau -12 dB;

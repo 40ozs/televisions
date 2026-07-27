@@ -53,12 +53,15 @@ constexpr float kSmoothSec = 0.02f;
 // Slit-loss corner per medium (SPEC 3 bandwidth table, HIST-APPROX).
 float slitCornerFor (Medium m) noexcept
 {
+    // Research doc §1.2: optical tracks carried HF to ~12.5 kHz (~13 kHz
+    // with noise reduction); the famous darkness came from the Academy
+    // *delivery* curve masking optical hiss, not from the medium itself.
     switch (m)
     {
-        case Medium::opticalStereo: return 10000.0f;
+        case Medium::opticalStereo: return 13000.0f;  // Dolby-era, with NR
         case Medium::kinescope:     return 8000.0f;   // optical print off monitor
-        case Medium::opticalMono:   return 7500.0f;
-        default:                    return 9000.0f;   // generic optical fallback
+        case Medium::opticalMono:   return 12500.0f;
+        default:                    return 12000.0f;  // generic optical fallback
     }
 }
 

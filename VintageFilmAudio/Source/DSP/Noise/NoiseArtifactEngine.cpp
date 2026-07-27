@@ -43,13 +43,17 @@ float levelCurve (float p) noexcept
 // Clean is nominally infinite; 75 dB keeps the source far down but usable.
 float mediumSnrDb (Medium m) noexcept
 {
+    // Reconciled with the research document (§1.3/1.4/1.5): optical
+    // ~40-50 dB; studio/35 mm magnetic 60-75 dB; Nagra-class field tape
+    // 68 dB NAB at 7.5 ips. Clean-machine noise is low — the audible era
+    // noise comes from print/dupe generations (generation-loss lift).
     switch (m)
     {
         case Medium::clean:           return 75.0f;  // HIST-APPROX stand-in for inf
-        case Medium::opticalMono:     return 38.0f;
+        case Medium::opticalMono:     return 42.0f;
         case Medium::opticalStereo:   return 48.0f;
-        case Medium::magneticFilm:    return 55.0f;
-        case Medium::fieldTape:       return 52.0f;
+        case Medium::magneticFilm:    return 62.0f;
+        case Medium::fieldTape:       return 68.0f;
         case Medium::kinescope:       return 35.0f;
         case Medium::broadcastMono:   return 45.0f;
         case Medium::broadcastStereo: return 55.0f;
@@ -464,7 +468,7 @@ void NoiseArtifactEngine::process (juce::AudioBuffer<float>& buffer,
     const float hissTarget = levelCurve (snap.nsHiss)
                            * dbToGain (-18.0f - mediumSnrDb (snap.medium))
                            * hissCal * extraLin;
-    const float cellTarget  = levelCurve (snap.nsCell)      * dbToGain (-56.0f) * cal.cell      * extraLin;
+    const float cellTarget  = levelCurve (snap.nsCell)      * dbToGain (-60.0f) * cal.cell      * extraLin;   // -18 - 42 (optical SNR)
     const float bcastTarget = levelCurve (snap.nsBroadcast) * dbToGain (-63.0f) * cal.broadcast * extraLin;
     const float projTarget  = levelCurve (snap.nsProjector) * dbToGain (-58.0f) * cal.projector;
     const float humTarget   = levelCurve (snap.nsHum)  * dbToGain (-60.0f);

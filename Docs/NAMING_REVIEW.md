@@ -7,7 +7,7 @@ are allowed in internal engineering docs only (this folder).
 
 ## Public names shipped in MVP (reviewed, descriptive-only)
 
-Presets: `1950s Theater Dialogue`, `1950s Magnetic Widescreen`,
+Presets: `1938 Optical Mono`, `1950s Theater Dialogue`, `1950s Magnetic Widescreen`,
 `Early Television Kinescope`, `1960s Studio Boom`, `1960s TV Sitcom Mono`,
 `1960s Dubbed Adventure`, `1970s Location Recorder`, `1977 Optical Stereo`,
 `1970s Theatrical Optical`, `1980s Broadcast Mono`, `1984 Television Stereo`,

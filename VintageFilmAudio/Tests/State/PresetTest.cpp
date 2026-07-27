@@ -13,6 +13,7 @@ namespace
 // Cleared names from Docs/NAMING_REVIEW.md — keep in sync (test enforces the
 // review gate: an uncleared preset name fails here).
 const std::set<std::string, std::less<>> clearedNames = {
+    "1938 Optical Mono",
     "1950s Theater Dialogue", "1950s Magnetic Widescreen",
     "Early Television Kinescope", "1960s Studio Boom", "1960s TV Sitcom Mono",
     "1960s Dubbed Adventure", "1970s Location Recorder",
@@ -25,7 +26,7 @@ const std::set<std::string, std::less<>> clearedNames = {
 VFA_TEST (Presets_names_cleared_and_values_valid)
 {
     const auto& presets = vfa::presets::factoryPresets();
-    CHECK (presets.size() == 16);
+    CHECK (presets.size() == 17);
 
     std::set<std::string, std::less<>> validIds;
     for (const auto& meta : vfa::params::allParams())
@@ -68,7 +69,7 @@ VFA_TEST (Presets_cover_required_decades_and_media)
 VFA_TEST (Presets_program_recall_accurate)
 {
     vfa::VfaProcessor proc;
-    CHECK (proc.getNumPrograms() == 16);
+    CHECK (proc.getNumPrograms() == 17);
 
     const auto& presets = vfa::presets::factoryPresets();
     for (int i = 0; i < (int) presets.size(); ++i)
