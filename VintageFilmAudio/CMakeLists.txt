@@ -97,7 +97,10 @@ juce_add_plugin(VintageFilmAudio
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE
     FORMATS ${VFA_FORMATS}
-    PRODUCT_NAME "Heard it on TV"
+    # PLUGIN_NAME is what hosts display; PRODUCT_NAME sets artifact file
+    # names, which must not contain spaces (owner requirement 2026-07-27).
+    PLUGIN_NAME "Heard it on TV"
+    PRODUCT_NAME "HeardItOnTV"
     VST3_CATEGORIES Fx Restoration
     AU_MAIN_TYPE kAudioUnitType_Effect
 )

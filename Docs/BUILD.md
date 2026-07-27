@@ -37,10 +37,10 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
 
 ## Artifacts (Release, Linux)
 
-- VST3: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/VST3/Heard it on TV.vst3`
-- Standalone: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/Standalone/Heard it on TV`
-- AU (macOS): `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/AU/Heard it on TV.component`
-- Shared-code static lib: `.../Release/libHeard it on TV_SharedCode.a`
+- VST3: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/VST3/HeardItOnTV.vst3`
+- Standalone: `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/Standalone/HeardItOnTV`
+- AU (macOS): `build/VintageFilmAudio/VintageFilmAudio_artefacts/Release/AU/HeardItOnTV.component`
+- Shared-code static lib: `.../Release/libHeardItOnTV_SharedCode.a`
 - Test executables: `build/VintageFilmAudio/VfaDspTests`, `build/VintageFilmAudio/VfaPluginTests`
 
 ## Tests
